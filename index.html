@@ -48,9 +48,8 @@ body.editing [data-t],body.editing [data-tp]{outline:1px dashed var(--ac);outlin
 <body><div class="wrap">
 <div class="top">
   <div><h1 data-t="title">Team Inventory</h1><div class="sub" id="count"></div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="adm" hidden data-t="b_admin">Admin</button><button class="btn sec" id="exp" hidden data-t="b_export">Export CSV</button><button class="btn" id="add" data-t="b_add">+ New product</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="exp" data-t="b_export">Export CSV</button><button class="btn" id="add" data-t="b_add">+ New product</button></div>
 </div>
-<div id="abar" hidden><b>Admin</b><button class="btn sec sm" id="aed">Click-to-edit texts: OFF</button><button class="btn sec sm" id="aset">Settings (rooms &amp; all texts)</button><button class="btn sec sm" id="apv">Preview form</button><button class="btn sec sm" id="alk">Lock</button></div>
 <div id="warn"></div>
 <div class="bar">
   <input id="q" type="search" data-tp="ph_search" placeholder="Search name, other names, location, buyer, reference…">
@@ -96,12 +95,6 @@ body.editing [data-t],body.editing [data-tp]{outline:1px dashed var(--ac);outlin
 
 <dialog id="ddlg"><h1 data-t="dup_title">Similar product found</h1><p class="m" data-t="dup_text">This looks like a product already in the inventory. Is it the same one? If yes, the new units will be added to it instead of creating a duplicate.</p><div id="dl"></div><div class="act"><button type="button" class="btn sec" id="dcx" data-t="b_dup_cancel">Cancel</button><button type="button" class="btn" id="dno" data-t="b_dup_no">No, it's a different product</button></div></dialog>
 
-<dialog id="adlg">
-  <h1>Admin settings</h1>
-  <label>Storage rooms <small>(one per line; renaming does not rename existing products)</small></label><textarea class="f" id="rl" rows="6"></textarea>
-  <label>All texts <small>(edit any wording; clear a field to restore the default)</small></label><div id="tl"></div>
-  <div class="act"><button class="btn sec" id="arst">Reset all texts</button><button class="btn sec" id="acx">Close</button><button class="btn" id="asv">Save</button></div>
-</dialog>
 
 <div id="lg" style="position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px">
   <div class="card" style="padding:24px;width:min(380px,100%)">
@@ -109,7 +102,7 @@ body.editing [data-t],body.editing [data-tp]{outline:1px dashed var(--ac);outlin
     <label>E-mail</label><input class="f" id="lge" type="email" autocomplete="username">
     <label>Password</label><input class="f" id="lgp" type="password" autocomplete="current-password">
     <div id="lgm" class="m" style="color:var(--bad);min-height:20px;margin-top:8px"></div>
-    <div class="act"><button class="btn sec sm" id="lgf" type="button">Forgot password?</button><button class="btn" id="lgb" type="button">Sign in</button></div>
+    <div class="act"><button class="btn" id="lgb" type="button">Sign in</button></div>
   </div>
 </div>
 <script>
@@ -129,8 +122,7 @@ window.claude=(function(){
         A.onAuthStateChanged(auth,function(u){if(u){g("lg").hidden=true;signOutBtn(A,auth);res()}else g("lg").hidden=false});
         var go=function(){g("lgm").style.color="var(--bad)";g("lgm").textContent="";A.signInWithEmailAndPassword(auth,g("lge").value.trim(),g("lgp").value).catch(function(){g("lgm").textContent="Wrong e-mail or password."})};
         g("lgb").onclick=go;g("lgp").onkeydown=function(e){if(e.key==="Enter")go()};
-        g("lgf").onclick=function(){var e=g("lge").value.trim();if(!e){g("lgm").textContent="Type your e-mail above first.";return}
-          A.sendPasswordResetEmail(auth,e).then(function(){g("lgm").style.color="var(--ok)";g("lgm").textContent="Reset e-mail sent (check your spam folder)."}).catch(function(){g("lgm").textContent="Could not send the e-mail."})};
+        
       });
     });
     return ready}
@@ -150,8 +142,8 @@ window.claude=(function(){
 </script>
 <script>
 (function(){
-var HASH="2018bd4836a613f97483da5d034921c923bb3007d032801dd63173f100363204";
 var items=[],db=null,assets=null,canWrite=true,admin=false,editing=false,editId=null,cur=null;
+/* >>> EDIT YOUR STORAGE ROOMS HERE (keep the quotes and commas) <<< */
 var rooms=["Room 1","Room 2","Room 3"],texts={},sort={k:"date",d:-1};
 var CATS=["Chemistry","Software","Instrument","Others"];
 var $=function(i){return document.getElementById(i)},qa=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
@@ -322,39 +314,6 @@ $("rows").onclick=function(e){
   if(b.dataset.a==="e")open(it);
   else uiConfirm("Delete “"+it.name+"”"+(it.units.length>1?" ("+it.units.length+" units)":"")+" from the inventory?\nThis cannot be undone.",{ok:"Delete",danger:true}).then(function(y){if(y)db.doc("items/"+it.id).delete().catch(function(){uiAlert("Could not delete (permissions or connection).")})});
 };
-/* ---- admin ---- */
-async function sha(s){var b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.prototype.map.call(new Uint8Array(b),function(x){return x.toString(16).padStart(2,"0")}).join("")}
-function setAdmin(on){admin=on;$("abar").hidden=!on;$("exp").hidden=!on;if(!on){editing=false;document.body.classList.remove("editing");$("aed").textContent="Click-to-edit texts: OFF"}}
-$("adm").onclick=async function(){
-  if(admin){$("abar").hidden=!$("abar").hidden;return}
-  var p=await uiPrompt("Admin password:","",true);if(p==null)return;
-  var h="";try{h=await sha(p)}catch(e){}
-  if(h===HASH)setAdmin(true);else uiAlert("Wrong password.");
-};
-$("alk").onclick=function(){setAdmin(false)};
-$("apv").onclick=function(){open()};
-$("aed").onclick=function(){if(!admin)return;editing=!editing;document.body.classList.toggle("editing",editing);$("aed").textContent="Click-to-edit texts: "+(editing?"ON (click any text)":"OFF")};
-function pushCfg(r,t){return db.doc("config/main").set({rooms:r,texts:t}).catch(function(){uiAlert("Could not save settings (permissions or connection).")})}
-document.addEventListener("click",function(e){
-  if(!editing||e.target.closest("#adlg,#abar"))return;
-  var el=e.target.closest("[data-t],[data-tp]");if(!el)return;
-  e.preventDefault();e.stopPropagation();
-  var k=el.dataset.t||el.dataset.tp;uiPrompt("Edit text:",T(k)).then(function(v){if(v==null)return;
-  v=v.trim();var t=Object.assign({},texts);if(v===""||v===D[k])delete t[k];else t[k]=v;pushCfg(rooms,t)});
-},true);
-$("aset").onclick=function(){if(!admin)return;
-  $("rl").value=rooms.join("\n");
-  $("tl").innerHTML=Object.keys(D).map(function(k){return'<div class="tr"><span class="m">'+esc(k)+'</span><input class="f" data-k="'+esc(k)+'" value="'+esc(T(k))+'"></div>'}).join("");
-  $("adlg").showModal();
-};
-$("acx").onclick=function(){$("adlg").close()};
-$("arst").onclick=function(){uiConfirm("Restore all default texts?",{ok:"Restore"}).then(function(y){if(y)pushCfg(rooms,{}).then(function(){$("adlg").close()})})};
-$("asv").onclick=function(){
-  var r=$("rl").value.split("\n").map(function(s){return s.trim()}).filter(Boolean);
-  if(!r.length){uiAlert("Add at least one room.");return}
-  var t={};qa("#tl input").forEach(function(i){var v=i.value.trim();if(v&&v!==D[i.dataset.k])t[i.dataset.k]=v});
-  pushCfg(r,t).then(function(){$("adlg").close()});
-};
 $("exp").onclick=async function(){
   var rows=[["Name","Other names","Category","Unit","Room","Location","Buyer","Purchase date","Expiration date","Status","Supplier link","SDS link","Reference","Notes"]];
   items.forEach(function(i){i.units.forEach(function(u,x){rows.push([i.name,(i.aliases||[]).join(", "),i.category,x+1,u.room,u.place,u.buyer,fmt(u.date),fmt(u.expiry),T("st_"+(i.status||"stock"))+(i.status==="shared"&&i.sharedWith?" "+i.sharedWith:""),i.supplier,i.sdsUrl,i.ref,i.notes])})});
@@ -366,9 +325,7 @@ async function init(){
   if(!db){$("warn").innerHTML='<div class="note">'+esc(T("w_signin"))+'</div>';canWrite=false;$("add").hidden=true;render();return}
   try{assets=await claude.use("assets")}catch(e){assets=null}
   try{var u=await claude.use("user");if(u&&u.can("data.write")===false){canWrite=false;$("add").hidden=true;$("warn").innerHTML='<div class="note">'+esc(T("w_ro"))+'</div>'}}catch(e){}
-  if(canWrite){$("adm").hidden=false;}
-  db.doc("config/main").onSnapshot(function(s){var d=s.exists&&s.data();if(d){if(d.rooms&&d.rooms.length)rooms=d.rooms;texts=d.texts||{}}render()},function(){});
-  db.collection("items").onSnapshot(function(s){items=s.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;return norm(o)});render()},function(){$("count").textContent="Loading error"});
+    db.collection("items").onSnapshot(function(s){items=s.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;return norm(o)});render()},function(){$("count").textContent="Loading error"});
 }
 render();init();
 })();
