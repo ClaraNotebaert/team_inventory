@@ -48,7 +48,7 @@ body.editing [data-t],body.editing [data-tp]{outline:1px dashed var(--ac);outlin
 <body><div class="wrap">
 <div class="top">
   <div><h1 data-t="title">Team Inventory</h1><div class="sub" id="count"></div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="exp" data-t="b_export">Export CSV</button><button class="btn" id="add" data-t="b_add">+ New product</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="add" data-t="b_add">+ New product</button></div>
 </div>
 <div id="warn"></div>
 <div class="bar">
@@ -70,7 +70,7 @@ body.editing [data-t],body.editing [data-tp]{outline:1px dashed var(--ac);outlin
   </div>
   <div id="shared" class="g3" style="margin-top:12px">
     <div><label><span data-t="l_room">Storage room</span> <i>*</i></label><select class="f" id="room" required></select></div>
-    <div><label data-t="l_place">Exact location (optional)</label><input class="f" id="place" data-tp="ph_place" placeholder="e.g. Cabinet B, shelf 2"></div>
+    <div><label data-t="l_place">Exact location (optional)</label><input class="f" id="place" data-tp="ph_place" placeholder="e.g. Shelf, -20°C fridge, Microfluidics drawer"></div>
     <div><label><span data-t="l_buyer">Bought by</span> <small data-t="h_opt">(optional)</small></label><input class="f" id="buyer" data-tp="ph_buyer" placeholder="Full name"></div>
   </div>
   <label class="chk" id="difw" hidden><input type="checkbox" id="dif"> <span data-t="l_diff">Units are stored in different places or bought by different people</span></label>
@@ -86,7 +86,7 @@ body.editing [data-t],body.editing [data-tp]{outline:1px dashed var(--ac);outlin
   <label><span data-t="l_img">Picture</span> <small data-t="h_opt3">(optional)</small></label><input class="f" id="img" type="file" accept="image/*">
   <label class="chk" id="imgx" hidden><input type="checkbox" id="imgr"> <span data-t="chk_img">Remove current picture</span></label>
   <label><span data-t="l_notes">Notes</span> <small data-t="h_opt4">(optional)</small></label><textarea class="f" id="notes" rows="2" data-tp="ph_notes" placeholder="Warranty, hazards, instructions…"></textarea>
-  <div id="stw"><label data-t="l_status">Status</label><select class="f" id="st"><option value="stock" data-t="st_stock">In stock</option><option value="prete" data-t="st_prete">Lent / in use</option><option value="hs" data-t="st_hs">Out of order / empty</option><option value="shared" data-t="st_shared">Shared with:</option></select><div id="shw" hidden><label><span data-t="l_group">Group name</span> <i>*</i></label><input class="f" id="shg" data-tp="ph_group" placeholder="e.g. Prof. Martin's lab"></div></div>
+  <div id="stw"><label data-t="l_status">Status</label><select class="f" id="st"><option value="stock" data-t="st_stock">In stock</option><option value="prete" data-t="st_prete">Lent / in use</option><option value="hs" data-t="st_hs">Out of order / empty</option><option value="shared" data-t="st_shared">Shared with:</option></select><div id="shw" hidden><label><span data-t="l_group">Group name</span> <i>*</i></label><input class="f" id="shg" data-tp="ph_group" placeholder="e.g. sea ice group"></div></div>
   <div class="m" id="upn" hidden style="margin-top:10px" data-t="up_note">File and picture uploads are not available to your account; use links instead.</div>
   <div class="act"><button type="button" class="btn sec" id="cancel" data-t="b_cancel">Cancel</button><button type="button" class="btn sec" id="again" data-t="b_again">Save &amp; add another</button><button class="btn" type="submit" id="ok" data-t="b_save">Save</button></div>
 </form></dialog>
@@ -144,7 +144,7 @@ window.claude=(function(){
 (function(){
 var items=[],db=null,assets=null,canWrite=true,admin=false,editing=false,editId=null,cur=null;
 /* >>> EDIT YOUR STORAGE ROOMS HERE (keep the quotes and commas) <<< */
-var rooms=["Room 1","Room 2","Room 3"],texts={},sort={k:"date",d:-1};
+var rooms=["Suspensions","Biocell","Chimie","Atelier","IPGG Technological Platform"],texts={},sort={k:"date",d:-1};
 var CATS=["Chemistry","Software","Instrument","Others"];
 var $=function(i){return document.getElementById(i)},qa=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
 var D={ph_date:"dd/mm/yyyy, mm/yyyy or yyyy",b_dup_yes:"Yes, same product — add to",count_one:"product",count_many:"products",count_shown:"shown",b_edit:"Edit",b_delete:"Delete",l_supplier:"Supplier",l_sds:"SDS",l_expshort:"Exp.",l_unit:"Unit",f_title_edit:"Edit product",fc_all:"All categories",fr_all:"All rooms",fb_all:"All buyers",w_signin:"Sign in to view and edit the shared inventory.",w_ro:"Read-only: ask for Contributor access to edit."};
@@ -313,12 +313,6 @@ $("rows").onclick=function(e){
   var b=e.target.closest("button");if(!b)return;var it=find(b.closest("tr").dataset.id);if(!it)return;
   if(b.dataset.a==="e")open(it);
   else uiConfirm("Delete “"+it.name+"”"+(it.units.length>1?" ("+it.units.length+" units)":"")+" from the inventory?\nThis cannot be undone.",{ok:"Delete",danger:true}).then(function(y){if(y)db.doc("items/"+it.id).delete().catch(function(){uiAlert("Could not delete (permissions or connection).")})});
-};
-$("exp").onclick=async function(){
-  var rows=[["Name","Other names","Category","Unit","Room","Location","Buyer","Purchase date","Expiration date","Status","Supplier link","SDS link","Reference","Notes"]];
-  items.forEach(function(i){i.units.forEach(function(u,x){rows.push([i.name,(i.aliases||[]).join(", "),i.category,x+1,u.room,u.place,u.buyer,fmt(u.date),fmt(u.expiry),T("st_"+(i.status||"stock"))+(i.status==="shared"&&i.sharedWith?" "+i.sharedWith:""),i.supplier,i.sdsUrl,i.ref,i.notes])})});
-  var csv="\ufeff"+rows.map(function(r){return r.map(function(c){return'"'+String(c==null?"":c).replace(/"/g,'""')+'"'}).join(",")}).join("\n");
-  try{var dl=await claude.use("downloads");if(dl)await dl.save({filename:"inventory.csv",data:csv});else uiAlert("Export unavailable here.")}catch(e){}
 };
 async function init(){
   try{db=await claude.use("db")}catch(e){db=null}
