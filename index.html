@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Team Inventory</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mut:#6b7280;--bd:#e2e5ea;--ac:#2f5bea;--ok:#1a7f4b;--warn:#b45309;--bad:#b42318;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+:root{color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:20px;margin:0}a{color:var(--ac)}
+.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+.sub,.m{color:var(--mut);font-size:13px}
+button,input,select,textarea{font:inherit;color:inherit}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer}
+.btn.sec{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.btn.sm{padding:4px 10px;font-weight:500;font-size:13px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.bar input,.bar select{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+.bar input{flex:1;min-width:200px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:940px}
+th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);padding:10px 12px;border-bottom:1px solid var(--bd);cursor:pointer;white-space:nowrap;user-select:none}
+th.on{color:var(--tx)}
+td{padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.n{font-weight:600}
+.pr{display:flex;gap:10px}td.im{width:84px;min-width:84px;height:72px;padding:0;position:relative}td.im img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tag{display:inline-block;border:1px solid var(--bd);border-radius:99px;padding:0 8px;font-size:12px;margin:2px 4px 0 0;color:var(--mut)}
+.s-stock,.ok{color:var(--ok)}.s-shared{color:var(--ac)}.s-prete,.soon{color:var(--warn)}.s-hs,.past{color:var(--bad)}
+.empty{padding:36px;text-align:center;color:var(--mut)}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);width:min(640px,94vw);max-height:92vh;padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
+label i{color:var(--bad);font-style:normal}label small{font-weight:400;color:var(--mut)}
+.f{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:8px}
+.ur{margin-bottom:8px}
+.act{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.note,#abar{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:var(--mut)}
+#abar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chk{font-weight:400;font-size:13px;margin:4px 0 0}
+body.editing [data-t],body.editing [data-tp]{outline:1px dashed var(--ac);outline-offset:1px;cursor:text}
+.tr{display:grid;grid-template-columns:130px 1fr;gap:8px;align-items:center;margin-bottom:6px}
+</style></head>
+<body><div class="wrap">
+<div class="top">
+  <div><h1 data-t="title">Team Inventory</h1><div class="sub" id="count"></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="adm" hidden data-t="b_admin">Admin</button><button class="btn sec" id="exp" hidden data-t="b_export">Export CSV</button><button class="btn" id="add" data-t="b_add">+ New product</button></div>
+</div>
+<div id="abar" hidden><b>Admin</b><button class="btn sec sm" id="aed">Click-to-edit texts: OFF</button><button class="btn sec sm" id="aset">Settings (rooms &amp; all texts)</button><button class="btn sec sm" id="apv">Preview form</button><button class="btn sec sm" id="alk">Lock</button></div>
+<div id="warn"></div>
+<div class="bar">
+  <input id="q" type="search" data-tp="ph_search" placeholder="Search name, other names, location, buyer, reference…">
+  <select id="fc"></select><select id="fr"></select><select id="fb"></select>
+  <select id="sk"><option value="date" data-t="so_date">Sort: purchase date</option><option value="name" data-t="so_name">Sort: name</option><option value="category" data-t="so_category">Sort: category</option><option value="buyer" data-t="so_buyer">Sort: buyer</option><option value="room" data-t="so_room">Sort: room</option><option value="expiry" data-t="so_expiry">Sort: expiration</option><option value="status" data-t="so_status">Sort: status</option></select>
+  <button class="btn sec" id="sd">↓</button>
+</div>
+<div class="card"><table><thead><tr><th></th><th data-k="name" data-t="h_product">Product</th><th data-k="category" data-t="h_category">Category</th><th data-k="room" data-t="h_location">Location</th><th data-k="qty" data-t="h_qty">Qty</th><th data-k="buyer" data-t="h_buyer">Buyer</th><th data-k="date" data-t="h_date">Purchased</th><th data-k="status" data-t="h_status">Status</th><th></th></tr></thead><tbody id="rows"></tbody></table><div class="empty" id="empty" hidden data-t="e_empty">No products yet. Click “+ New product” to start.</div></div>
+</div>
+
+<dialog id="dlg"><form id="frm" autocomplete="off">
+  <h1 id="dt" data-t="f_title_new">New product</h1>
+  <label><span data-t="l_name">Product name</span> <i>*</i></label><input class="f" id="name" required data-tp="ph_name" placeholder="e.g. Acetonitrile HPLC grade">
+  <label><span data-t="l_alias">Other names</span> <small data-t="h_alias">(optional, comma-separated, to find it easily)</small></label><input class="f" id="alias" data-tp="ph_alias" placeholder="e.g. ACN, MeCN, methyl cyanide">
+  <div class="g">
+    <div><label><span data-t="l_cat">Category</span> <i>*</i></label><select class="f" id="cat" required><option value="" data-t="opt_select">Select…</option><option value="Chemistry" data-t="cat_Chemistry">Chemistry</option><option value="Software" data-t="cat_Software">Software</option><option value="Instrument" data-t="cat_Instrument">Instrument</option><option value="Others" data-t="cat_Others">Others</option></select></div>
+    <div><label><span data-t="l_qty">Quantity</span> <small data-t="h_qty2">(one location &amp; buyer per unit)</small></label><input class="f" id="qty" type="number" min="1" max="50" value="1"></div>
+  </div>
+  <div id="shared" class="g3" style="margin-top:12px">
+    <div><label><span data-t="l_room">Storage room</span> <i>*</i></label><select class="f" id="room" required></select></div>
+    <div><label data-t="l_place">Exact location (optional)</label><input class="f" id="place" data-tp="ph_place" placeholder="e.g. Cabinet B, shelf 2"></div>
+    <div><label><span data-t="l_buyer">Bought by</span> <small data-t="h_opt">(optional)</small></label><input class="f" id="buyer" data-tp="ph_buyer" placeholder="Full name"></div>
+  </div>
+  <label class="chk" id="difw" hidden><input type="checkbox" id="dif"> <span data-t="l_diff">Units are stored in different places or bought by different people</span></label>
+  <div class="g m" id="uh" style="margin-top:14px"><b data-t="l_date">Purchase date</b><b id="uhx" data-t="l_exp">Expiration date</b></div>
+  <div id="units"></div>
+  <label data-t="l_ref">Reference / serial number</label><input class="f" id="ref">
+  <label><span data-t="l_sup">Supplier link</span> <small data-t="h_sup">(optional, to reorder)</small></label><input class="f" id="sup" type="url" placeholder="https://…">
+  <div id="chem" hidden>
+    <label><span data-t="l_sdsl">SDS link</span> <small data-t="h_opt2">(optional)</small></label><input class="f" id="sdsl" type="url" placeholder="https://…">
+    <label hidden><span data-t="l_sdsf">or SDS file</span> <small data-t="h_sdsf">(optional, PDF)</small></label><input class="f" id="sdsf" hidden type="file" accept="application/pdf">
+    <label class="chk" id="sdsx" hidden><input type="checkbox" id="sdsr"> <span data-t="chk_sds">Remove current SDS file</span></label>
+  </div>
+  <label><span data-t="l_img">Picture</span> <small data-t="h_opt3">(optional)</small></label><input class="f" id="img" type="file" accept="image/*">
+  <label class="chk" id="imgx" hidden><input type="checkbox" id="imgr"> <span data-t="chk_img">Remove current picture</span></label>
+  <label><span data-t="l_notes">Notes</span> <small data-t="h_opt4">(optional)</small></label><textarea class="f" id="notes" rows="2" data-tp="ph_notes" placeholder="Warranty, hazards, instructions…"></textarea>
+  <div id="stw"><label data-t="l_status">Status</label><select class="f" id="st"><option value="stock" data-t="st_stock">In stock</option><option value="prete" data-t="st_prete">Lent / in use</option><option value="hs" data-t="st_hs">Out of order / empty</option><option value="shared" data-t="st_shared">Shared with:</option></select><div id="shw" hidden><label><span data-t="l_group">Group name</span> <i>*</i></label><input class="f" id="shg" data-tp="ph_group" placeholder="e.g. Prof. Martin's lab"></div></div>
+  <div class="m" id="upn" hidden style="margin-top:10px" data-t="up_note">File and picture uploads are not available to your account; use links instead.</div>
+  <div class="act"><button type="button" class="btn sec" id="cancel" data-t="b_cancel">Cancel</button><button type="button" class="btn sec" id="again" data-t="b_again">Save &amp; add another</button><button class="btn" type="submit" id="ok" data-t="b_save">Save</button></div>
+</form></dialog>
+
+<dialog id="mdlg"><form id="mf"><p id="mm" style="margin:0 0 10px;white-space:pre-wrap"></p><input class="f" id="mi" hidden><div class="act"><button type="button" class="btn sec" id="mc">Cancel</button><button type="button" class="btn" id="mo">OK</button></div></form></dialog>
+
+<dialog id="ddlg"><h1 data-t="dup_title">Similar product found</h1><p class="m" data-t="dup_text">This looks like a product already in the inventory. Is it the same one? If yes, the new units will be added to it instead of creating a duplicate.</p><div id="dl"></div><div class="act"><button type="button" class="btn sec" id="dcx" data-t="b_dup_cancel">Cancel</button><button type="button" class="btn" id="dno" data-t="b_dup_no">No, it's a different product</button></div></dialog>
+
+<dialog id="adlg">
+  <h1>Admin settings</h1>
+  <label>Storage rooms <small>(one per line; renaming does not rename existing products)</small></label><textarea class="f" id="rl" rows="6"></textarea>
+  <label>All texts <small>(edit any wording; clear a field to restore the default)</small></label><div id="tl"></div>
+  <div class="act"><button class="btn sec" id="arst">Reset all texts</button><button class="btn sec" id="acx">Close</button><button class="btn" id="asv">Save</button></div>
+</dialog>
+
+<div id="lg" style="position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="padding:24px;width:min(380px,100%)">
+    <h1>Team Inventory</h1><p class="m">Sign in with your team account.</p>
+    <label>E-mail</label><input class="f" id="lge" type="email" autocomplete="username">
+    <label>Password</label><input class="f" id="lgp" type="password" autocomplete="current-password">
+    <div id="lgm" class="m" style="color:var(--bad);min-height:20px;margin-top:8px"></div>
+    <div class="act"><button class="btn sec sm" id="lgf" type="button">Forgot password?</button><button class="btn" id="lgb" type="button">Sign in</button></div>
+  </div>
+</div>
+<script>
+/* ===== Firebase connector (replaces the claude.ai storage used by the original page) ===== */
+window.claude=(function(){
+  var CFG={apiKey:"AIzaSyCmQhJWy5I8k39ZVhwz_17obbdyk5m1TKw",authDomain:"team-inventory-a4e64.firebaseapp.com",projectId:"team-inventory-a4e64",storageBucket:"team-inventory-a4e64.firebasestorage.app",messagingSenderId:"640358204181",appId:"1:640358204181:web:ab676d92e99245e92c9f1c"};
+  var B="https://www.gstatic.com/firebasejs/10.14.1/",F=null,db=null,ready=null,g=function(i){return document.getElementById(i)};
+  function signOutBtn(A,auth){
+    if(g("so"))return;var b=document.createElement("button");b.id="so";b.className="btn sec";b.textContent="Sign out";
+    b.onclick=function(){A.signOut(auth).then(function(){location.reload()})};
+    var box=document.querySelector(".top>div:last-child");if(box)box.appendChild(b)}
+  function boot(){
+    if(ready)return ready;
+    ready=Promise.all([import(B+"firebase-app.js"),import(B+"firebase-auth.js"),import(B+"firebase-firestore.js")]).then(function(m){
+      var app=m[0].initializeApp(CFG),A=m[1],auth=A.getAuth(app);F=m[2];db=F.getFirestore(app);
+      return new Promise(function(res){
+        A.onAuthStateChanged(auth,function(u){if(u){g("lg").hidden=true;signOutBtn(A,auth);res()}else g("lg").hidden=false});
+        var go=function(){g("lgm").style.color="var(--bad)";g("lgm").textContent="";A.signInWithEmailAndPassword(auth,g("lge").value.trim(),g("lgp").value).catch(function(){g("lgm").textContent="Wrong e-mail or password."})};
+        g("lgb").onclick=go;g("lgp").onkeydown=function(e){if(e.key==="Enter")go()};
+        g("lgf").onclick=function(){var e=g("lge").value.trim();if(!e){g("lgm").textContent="Type your e-mail above first.";return}
+          A.sendPasswordResetEmail(auth,e).then(function(){g("lgm").style.color="var(--ok)";g("lgm").textContent="Reset e-mail sent (check your spam folder)."}).catch(function(){g("lgm").textContent="Could not send the e-mail."})};
+      });
+    });
+    return ready}
+  function wrapDoc(r){return{
+    get:function(){return F.getDoc(r)},set:function(d){return F.setDoc(r,d)},update:function(d){return F.updateDoc(r,d)},delete:function(){return F.deleteDoc(r)},
+    onSnapshot:function(ok,er){return F.onSnapshot(r,function(s){ok({exists:s.exists(),data:function(){return s.data()}})},er)}}}
+  function adapter(){return{
+    doc:function(p){return wrapDoc(F.doc(db,p))},
+    collection:function(p){var c=F.collection(db,p);return{add:function(d){return F.addDoc(c,d)},onSnapshot:function(ok,er){return F.onSnapshot(c,ok,er)}}}}}
+  return{use:function(n){return boot().then(function(){
+    if(n==="db")return adapter();
+    if(n==="user")return{can:function(){return true}};
+    if(n==="assets")return{upload:function(b){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res({id:r.result})};r.onerror=rej;r.readAsDataURL(b)})}};
+    if(n==="downloads")return{save:function(o){var b=o.data instanceof Blob?o.data:new Blob([o.data]),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=o.filename;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);return Promise.resolve()}};
+    return null})}}
+})();
+</script>
+<script>
+(function(){
+var HASH="2018bd4836a613f97483da5d034921c923bb3007d032801dd63173f100363204";
+var items=[],db=null,assets=null,canWrite=true,admin=false,editing=false,editId=null,cur=null;
+var rooms=["Room 1","Room 2","Room 3"],texts={},sort={k:"date",d:-1};
+var CATS=["Chemistry","Software","Instrument","Others"];
+var $=function(i){return document.getElementById(i)},qa=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+var D={ph_date:"dd/mm/yyyy, mm/yyyy or yyyy",b_dup_yes:"Yes, same product — add to",count_one:"product",count_many:"products",count_shown:"shown",b_edit:"Edit",b_delete:"Delete",l_supplier:"Supplier",l_sds:"SDS",l_expshort:"Exp.",l_unit:"Unit",f_title_edit:"Edit product",fc_all:"All categories",fr_all:"All rooms",fb_all:"All buyers",w_signin:"Sign in to view and edit the shared inventory.",w_ro:"Read-only: ask for Contributor access to edit."};
+qa("[data-t]").forEach(function(e){D[e.dataset.t]=e.textContent.trim()});
+qa("[data-tp]").forEach(function(e){D[e.dataset.tp]=e.placeholder});
+var T=function(k){var v=texts[k];return v!=null&&v!==""?v:(D[k]||k)};
+function applyTexts(){qa("[data-t]").forEach(function(e){e.textContent=T(e.dataset.t)});qa("[data-tp]").forEach(function(e){e.placeholder=T(e.dataset.tp)})}
+function esc(s){var d=document.createElement("div");d.textContent=s==null?"":String(s);return d.innerHTML.replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function imgSrc(id){return /^data:/.test(id)?id:"/_blob/"+id}
+function safeUrl(u){return /^https?:\/\//i.test(u||"")?u:""}
+function norm(o){var raw=o.units&&o.units.length?o.units:[{room:o.room||"",place:o.place||"",buyer:o.buyer||""}];
+  var u=raw.map(function(x){return Object.assign({},x,{date:x.date!=null?x.date:(o.date||""),expiry:x.expiry!=null?x.expiry:(o.expiry||"")})});
+  var first=function(f){var v=u.map(f).filter(Boolean).sort();return v[0]||""};
+  o.units=u;o.room=u[0].room;o.place=u[0].place;o.buyer=u[0].buyer;o.qty=u.length;o.date=first(function(x){return x.date});o.expiry=first(function(x){return x.expiry});return o}
+function parseD(s){s=String(s||"").trim();if(!s)return"";var m,y,mo,d,dt;
+  if(m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/)){d=+m[1];mo=+m[2];y=+m[3];dt=new Date(y,mo-1,d);if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d)return null;return y+"-"+("0"+mo).slice(-2)+"-"+("0"+d).slice(-2)}
+  if(m=s.match(/^(\d{1,2})[\/.\-](\d{4})$/)){mo=+m[1];y=+m[2];if(mo<1||mo>12)return null;return y+"-"+("0"+mo).slice(-2)}
+  if(/^\d{4}$/.test(s))return s;return null}
+function fmt(v){if(!v)return"";var p=v.split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:p.length===2?p[1]+"/"+p[0]:p[0]}
+function endOf(v){var p=v.split("-");if(p.length===3)return v;if(p.length===2)return v+"-"+("0"+new Date(+p[0],+p[1],0).getDate()).slice(-2);return v+"-12-31"}
+function allRooms(){var o=rooms.slice();items.forEach(function(i){i.units.forEach(function(u){if(u.room&&o.indexOf(u.room)<0)o.push(u.room)})});return o}
+function allBuyers(){var o={};items.forEach(function(i){i.units.forEach(function(u){if(u.buyer)o[u.buyer]=1})});return Object.keys(o).sort()}
+function fill(el,pairs,cur,first){el.innerHTML='<option value="">'+esc(first)+'</option>'+pairs.map(function(p){return'<option value="'+esc(p[0])+'"'+(p[0]===cur?' selected':'')+'>'+esc(p[1])+'</option>'}).join("")}
+var today=new Date().toISOString().slice(0,10),soon=new Date(Date.now()+30*864e5).toISOString().slice(0,10);
+function render(){
+  applyTexts();
+  var q=$("q").value.toLowerCase(),fc=$("fc").value,fr=$("fr").value,fb=$("fb").value;
+  fill($("fc"),CATS.map(function(c){return[c,T("cat_"+c)]}),fc,T("fc_all"));
+  fill($("fr"),allRooms().map(function(r){return[r,r]}),fr,T("fr_all"));
+  fill($("fb"),allBuyers().map(function(b){return[b,b]}),fb,T("fb_all"));
+  var list=items.filter(function(i){
+    var hay=[i.name,(i.aliases||[]).join(" "),i.category,i.ref,i.notes].concat(i.units.map(function(u){return u.room+" "+u.place+" "+u.buyer})).join(" ").toLowerCase();
+    return(!fc||i.category===fc)&&(!fr||i.units.some(function(u){return u.room===fr}))&&(!fb||i.units.some(function(u){return u.buyer===fb}))&&(!q||hay.indexOf(q)>-1)});
+  var k=sort.k;
+  list.sort(function(a,b){var x=a[k],y=b[k];if(k==="expiry"){x=x||"9999";y=y||"9999"}if(x==null)x="";if(y==null)y="";
+    var r=typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y),"en",{sensitivity:"base"});
+    return(r||String(a.name).localeCompare(b.name))*sort.d});
+  $("sk").value=sort.k;$("sd").textContent=sort.d>0?"↑":"↓";
+  qa("th[data-k]").forEach(function(t){var on=t.dataset.k===sort.k;t.className=on?"on":"";if(on)t.textContent+=sort.d>0?" ↑":" ↓"});
+  $("count").textContent=items.length+" "+(items.length===1?T("count_one"):T("count_many"))+(list.length!==items.length?" · "+list.length+" "+T("count_shown"):"");
+  $("empty").hidden=list.length>0;
+  $("rows").innerHTML=list.map(function(i){
+    var links=[];
+    if(safeUrl(i.supplier))links.push('<a href="'+esc(safeUrl(i.supplier))+'" target="_blank" rel="noopener">'+esc(T("l_supplier"))+'</a>');
+    var sds=i.sdsId?"#":safeUrl(i.sdsUrl);
+    if(sds)links.push('<a href="'+esc(sds)+'"'+(i.sdsId?' data-sds="'+esc(i.sdsId)+'"':' target="_blank" rel="noopener"')+'>'+esc(T("l_sds"))+'</a>');
+    var col=function(f){var v=i.units.map(f);if(v.every(function(x){return x===v[0]}))return'<div>'+v[0]+'</div>';return v.map(function(x,k){return'<div>'+(k+1)+'. '+x+'</div>'}).join("")};
+    var xs=function(u){if(!u.expiry)return'<span class="m">—</span>';var e=endOf(u.expiry);return'<span class="'+(e<today?"past":e<=soon?"soon":"")+'">'+esc(fmt(u.expiry))+'</span>'};
+    var ex=i.category==="Chemistry"&&i.units.some(function(u){return u.expiry})?'<div class="m">'+esc(T("l_expshort"))+'</div>'+col(xs):"";
+    return'<tr data-id="'+esc(i.id)+'"><td class="im">'+(i.imageId?'<img src="'+esc(imgSrc(i.imageId))+'" alt="">':'')+'</td><td><div class="pr"><div><div class="n">'+esc(i.name)+'</div>'
+    +(i.aliases&&i.aliases.length?'<div>'+i.aliases.map(function(a){return'<span class="tag">'+esc(a)+'</span>'}).join("")+'</div>':'')
+    +'<div class="m">'+esc(i.ref||"")+(links.length?(i.ref?' · ':'')+links.join(' · '):'')+'</div>'+(i.notes?'<div class="m">'+esc(i.notes)+'</div>':'')+'</div></div></td>'
+    +'<td>'+esc(T("cat_"+i.category))+ex+'</td>'
+    +'<td>'+col(function(u){return esc(u.room)+(u.place?' <span class="m">'+esc(u.place)+'</span>':'')})+'</td>'
+    +'<td><b>'+esc(i.qty)+'</b></td>'
+    +'<td>'+col(function(u){return esc(u.buyer||"—")})+'</td>'
+    +'<td>'+col(function(u){return esc(fmt(u.date)||"—")})+'</td>'
+    +'<td class="s-'+esc(i.status||"stock")+'">'+esc(T("st_"+(i.status||"stock")))+(i.status==="shared"&&i.sharedWith?' <b>'+esc(i.sharedWith)+'</b>':'')+'</td>'
+    +'<td style="white-space:nowrap">'+(canWrite?'<button class="btn sec sm" data-a="e">'+esc(T("b_edit"))+'</button> <button class="btn sec sm" data-a="d">'+esc(T("b_delete"))+'</button>':'')+'</td></tr>'}).join("");
+}
+function find(id){return items.filter(function(i){return i.id===id})[0]}
+var difState=false;
+function applyDif(){$("shared").hidden=difState;$("room").required=!difState}
+function chemToggle(){$("chem").hidden=$("cat").value!=="Chemistry";if($("units").children.length)unitsUI(readUnits())}
+function readUnits(){var dif=difState;return qa("#units .ur").map(function(r){var g=function(c){var e=r.querySelector(c);return e?e.value.trim():""};return{room:dif?g(".ur-room"):$("room").value,place:dif?g(".ur-place"):$("place").value.trim(),buyer:dif?g(".ur-buyer"):$("buyer").value.trim(),date:g(".ur-date"),expiry:g(".ur-exp")}})}
+function unitsUI(vals){
+  var n=Math.max(1,Math.min(50,parseInt($("qty").value,10)||1)),chem=$("cat").value==="Chemistry";
+  while(vals.length<n)vals.push(Object.assign({},vals[vals.length-1]||{}));
+  if(n<2&&difState){difState=false;$("dif").checked=false;$("room").value=vals[0].room||"";$("place").value=vals[0].place||"";$("buyer").value=vals[0].buyer||"";applyDif()}
+  $("difw").hidden=n<2;$("uhx").hidden=!chem;
+  var opts='<option value="">'+esc(T("opt_select"))+'</option>'+allRooms().map(function(r){return'<option>'+esc(r)+'</option>'}).join(""),h="";
+  for(var i=0;i<n;i++){var v=vals[i];
+    h+='<div class="ur">'+(n>1?'<div class="m"><b>'+esc(T("l_unit"))+' '+(i+1)+'</b></div>':'')
+    +'<div class="g"><input class="f ur-date" value="'+esc(v.date||"")+'" placeholder="'+esc(T("ph_date"))+'">'+(chem?'<input class="f ur-exp" value="'+esc(v.expiry||"")+'" placeholder="'+esc(T("ph_date"))+'">':'<span></span>')+'</div>'
+    +(difState?'<div class="g3" style="margin-top:6px"><select class="f ur-room" required>'+opts+'</select><input class="f ur-place" placeholder="'+esc(T("ph_place"))+'" value="'+esc(v.place||"")+'"><input class="f ur-buyer" placeholder="'+esc(T("ph_buyer"))+'" value="'+esc(v.buyer||"")+'"></div>':'')+'</div>'}
+  $("units").innerHTML=h;
+  if(difState)qa("#units .ur-room").forEach(function(s,i){s.value=vals[i].room||""});
+}
+function open(it,pre){
+  editId=it?it.id:null;cur=it;$("dt").dataset.t=it?"f_title_edit":"f_title_new";applyTexts();
+  $("again").hidden=!!it;
+  var lb="";try{lb=localStorage.getItem("inv-buyer")||""}catch(e){}
+  $("name").value=it?it.name:"";$("alias").value=it&&it.aliases?it.aliases.join(", "):"";$("cat").value=it?it.category:(pre?pre.cat:"");
+  $("qty").value=it?it.units.length:1;
+  $("room").innerHTML='<option value="">'+esc(T("opt_select"))+'</option>'+allRooms().map(function(r){return'<option>'+esc(r)+'</option>'}).join("");
+  var us=it?it.units.map(function(u){return Object.assign({},u,{date:fmt(u.date),expiry:fmt(u.expiry)})}):[pre?Object.assign({},pre.unit,{date:fmt(today),expiry:""}):{room:"",place:"",buyer:lb,date:fmt(today),expiry:""}];
+  difState=!us.every(function(u){return u.room===us[0].room&&u.place===us[0].place&&u.buyer===us[0].buyer});
+  $("dif").checked=difState;$("room").value=us[0].room||"";$("place").value=us[0].place||"";$("buyer").value=us[0].buyer||"";
+  applyDif();unitsUI(us);
+  $("sup").value=it?it.supplier||"":"";$("sdsl").value=it?it.sdsUrl||"":"";$("ref").value=it?it.ref||"":"";$("notes").value=it?it.notes||"":"";
+  $("st").value=it?it.status||"stock":"stock";$("shg").value=it?it.sharedWith||"":"";shareToggle();
+  $("sdsf").value="";$("img").value="";$("sdsr").checked=false;$("imgr").checked=false;
+  $("sdsx").hidden=!(it&&it.sdsId);$("imgx").hidden=!(it&&it.imageId);
+  $("sdsf").disabled=$("img").disabled=!assets;$("upn").hidden=!!assets;
+  chemToggle();if(!$("dlg").open)$("dlg").showModal();$("name").focus();
+}
+function shrink(file){return new Promise(function(res){
+  var im=new Image(),u=URL.createObjectURL(file);
+  im.onload=function(){var s=Math.min(1,600/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c.toBlob(function(b){URL.revokeObjectURL(u);res(b||file)},"image/jpeg",.72)};
+  im.onerror=function(){res(file)};im.src=u})}
+function modal(msg,o){o=o||{};return new Promise(function(res){
+  var dg=$("mdlg"),inp=$("mi");
+  $("mm").textContent=msg;inp.hidden=!o.input;inp.type=o.pw?"password":"text";inp.value=o.val||"";
+  $("mc").hidden=!!o.alert;$("mo").textContent=o.ok||"OK";$("mo").style.background=o.danger?"var(--bad)":"";
+  var done=function(v){dg.onclose=null;dg.close();res(v)};
+  $("mo").onclick=function(){done(o.input?inp.value:true)};
+  $("mc").onclick=function(){done(o.input?null:false)};
+  $("mf").onsubmit=function(e){e.preventDefault();$("mo").click()};
+  dg.onclose=function(){done(o.input?null:false)};
+  dg.showModal();(o.input?inp:$(o.danger?"mc":"mo")).focus()})}
+var uiAlert=function(m){return modal(m,{alert:true})},uiConfirm=function(m,o){return modal(m,o)},uiPrompt=function(m,v,pw){return modal(m,{input:true,val:v,pw:pw})};
+function nz(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
+function lev(a,b){var p=[],i,j;for(j=0;j<=b.length;j++)p[j]=j;for(i=1;i<=a.length;i++){var q=[i];for(j=1;j<=b.length;j++)q[j]=Math.min(p[j]+1,q[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=q}return p[b.length]}
+function sim(a,b){if(!a||!b)return false;if(a===b)return true;if(Math.min(a.length,b.length)>=4&&(a.indexOf(b)>-1||b.indexOf(a)>-1))return true;return lev(a,b)<=Math.floor(Math.max(a.length,b.length)/9)}
+function similar(d){var mine=[d.name].concat(d.aliases).map(nz).filter(Boolean);return items.filter(function(i){var th=[i.name].concat(i.aliases||[]).map(nz);return mine.some(function(a){return th.some(function(b){return sim(a,b)})})}).slice(0,4)}
+function askDup(ms){return new Promise(function(res){
+  var dg=$("ddlg");
+  $("dl").innerHTML=ms.map(function(m){return'<button type="button" class="btn sec" data-id="'+esc(m.id)+'" style="display:block;width:100%;text-align:left;margin-top:8px">'+esc(T("b_dup_yes"))+': <b>'+esc(m.name)+'</b> <span class="m">'+esc(T("cat_"+m.category))+' · '+m.units.length+'× · '+esc(m.room)+'</span></button>'}).join("");
+  var done=function(v){dg.onclose=null;if(dg.open)dg.close();res(v)};
+  $("dl").onclick=function(e){var b=e.target.closest("button");if(b)done(b.dataset.id)};
+  $("dno").onclick=function(){done(null)};$("dcx").onclick=function(){done(false)};
+  dg.onclose=function(){done(false)};applyTexts();dg.showModal()})}
+async function save(keep){
+  qa("#units .ur-date,#units .ur-exp").forEach(function(e){e.setCustomValidity(parseD(e.value)===null?"Use dd/mm/yyyy, mm/yyyy or yyyy":"")});
+  if(!$("frm").reportValidity())return;
+  $("ok").disabled=$("again").disabled=true;
+  var chem=$("cat").value==="Chemistry",c=cur||{},u=readUnits().map(function(x){return{room:x.room,place:x.place,buyer:x.buyer,date:parseD(x.date)||"",expiry:chem?(parseD(x.expiry)||""):""}});
+  var d={name:$("name").value.trim(),aliases:$("alias").value.split(",").map(function(s){return s.trim()}).filter(Boolean),category:$("cat").value,units:u,qty:u.length,room:u[0].room,place:u[0].place,buyer:u[0].buyer,supplier:$("sup").value.trim(),sdsUrl:chem?$("sdsl").value.trim():"",ref:$("ref").value.trim(),notes:$("notes").value.trim(),status:$("st").value,sharedWith:$("st").value==="shared"?$("shg").value.trim():"",sdsId:chem?(c.sdsId||""):"",imageId:c.imageId||"",updatedAt:Date.now()};
+  try{
+    var tgt=null;
+    if(!editId){var ms=similar(d);if(ms.length){tgt=await askDup(ms);if(tgt===false){$("ok").disabled=$("again").disabled=false;return}}}
+    if($("sdsr").checked)d.sdsId="";if($("imgr").checked)d.imageId="";
+    if(assets&&chem&&$("sdsf").files[0]){d.sdsId=(await assets.upload($("sdsf").files[0])).id}
+    if(assets&&$("img").files[0]){d.imageId=(await assets.upload(await shrink($("img").files[0]))).id}
+    var ex=tgt&&find(tgt);
+    if(ex){var us=ex.units.concat(u),al=(ex.aliases||[]).slice(),low=function(x){return x.toLowerCase()};
+      [d.name].concat(d.aliases).forEach(function(a){if(a&&low(a)!==low(ex.name)&&al.map(low).indexOf(low(a))<0)al.push(a)});
+      var up={units:us,qty:us.length,room:us[0].room,place:us[0].place,buyer:us[0].buyer,aliases:al,updatedAt:Date.now()};
+      ["supplier","sdsUrl","sdsId","imageId"].forEach(function(k){if(!ex[k]&&d[k])up[k]=d[k]});
+      await db.doc("items/"+tgt).update(up)}
+    else if(editId)await db.doc("items/"+editId).update(d);else{d.createdAt=Date.now();await db.collection("items").add(d)}
+    try{if(u[0].buyer)localStorage.setItem("inv-buyer",u[0].buyer)}catch(e){}
+    if(keep&&!editId)open(null,{cat:d.category,unit:u[0]});else $("dlg").close();
+  }catch(e){uiAlert("Could not save (permissions, file upload or connection).")}
+  $("ok").disabled=$("again").disabled=false;
+}
+$("add").onclick=function(){open()};
+$("cancel").onclick=function(){$("dlg").close()};
+$("cat").onchange=chemToggle;$("st").onchange=shareToggle;
+function shareToggle(){var s=$("st").value==="shared";$("shw").hidden=!s;$("shg").required=s}
+$("qty").oninput=function(){var n=parseInt($("qty").value,10);if(!n||n<1)return;unitsUI(readUnits())};
+$("dif").onchange=function(){var vals=readUnits();difState=$("dif").checked;if(!difState){$("room").value=vals[0].room;$("place").value=vals[0].place;$("buyer").value=vals[0].buyer}applyDif();unitsUI(vals)};
+$("frm").onsubmit=function(e){e.preventDefault();save(false)};
+$("again").onclick=function(){save(true)};
+["q","fc","fr","fb"].forEach(function(i){$(i).oninput=render});
+$("sk").onchange=function(){sort.k=$("sk").value;sort.d=sort.k==="date"?-1:1;render()};
+$("sd").onclick=function(){sort.d*=-1;render()};
+document.querySelector("thead").onclick=function(e){var t=e.target.closest("th[data-k]");if(!t)return;if(sort.k===t.dataset.k)sort.d*=-1;else{sort.k=t.dataset.k;sort.d=1}render()};
+async function getSds(id,name){
+  try{var r=await fetch("/_blob/"+id);if(!r.ok)throw new Error("nf");var b=await r.blob(),dl=await claude.use("downloads");if(!dl)throw new Error("nd");
+    await dl.save({filename:("SDS - "+name).replace(/[\\\/:*?"<>|]/g,"")+".pdf",data:b})}
+  catch(e){if(!e||e.code!=="declined")uiAlert("Could not open the SDS file. Please try again, or re-upload it with Edit.")}
+}
+$("rows").onclick=function(e){
+  var a=e.target.closest("a[data-sds]");if(a){e.preventDefault();var ir=find(a.closest("tr").dataset.id);getSds(a.dataset.sds,ir?ir.name:"product");return}
+  var b=e.target.closest("button");if(!b)return;var it=find(b.closest("tr").dataset.id);if(!it)return;
+  if(b.dataset.a==="e")open(it);
+  else uiConfirm("Delete “"+it.name+"”"+(it.units.length>1?" ("+it.units.length+" units)":"")+" from the inventory?\nThis cannot be undone.",{ok:"Delete",danger:true}).then(function(y){if(y)db.doc("items/"+it.id).delete().catch(function(){uiAlert("Could not delete (permissions or connection).")})});
+};
+/* ---- admin ---- */
+async function sha(s){var b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.prototype.map.call(new Uint8Array(b),function(x){return x.toString(16).padStart(2,"0")}).join("")}
+function setAdmin(on){admin=on;$("abar").hidden=!on;$("exp").hidden=!on;if(!on){editing=false;document.body.classList.remove("editing");$("aed").textContent="Click-to-edit texts: OFF"}}
+$("adm").onclick=async function(){
+  if(admin){$("abar").hidden=!$("abar").hidden;return}
+  var p=await uiPrompt("Admin password:","",true);if(p==null)return;
+  var h="";try{h=await sha(p)}catch(e){}
+  if(h===HASH)setAdmin(true);else uiAlert("Wrong password.");
+};
+$("alk").onclick=function(){setAdmin(false)};
+$("apv").onclick=function(){open()};
+$("aed").onclick=function(){if(!admin)return;editing=!editing;document.body.classList.toggle("editing",editing);$("aed").textContent="Click-to-edit texts: "+(editing?"ON (click any text)":"OFF")};
+function pushCfg(r,t){return db.doc("config/main").set({rooms:r,texts:t}).catch(function(){uiAlert("Could not save settings (permissions or connection).")})}
+document.addEventListener("click",function(e){
+  if(!editing||e.target.closest("#adlg,#abar"))return;
+  var el=e.target.closest("[data-t],[data-tp]");if(!el)return;
+  e.preventDefault();e.stopPropagation();
+  var k=el.dataset.t||el.dataset.tp;uiPrompt("Edit text:",T(k)).then(function(v){if(v==null)return;
+  v=v.trim();var t=Object.assign({},texts);if(v===""||v===D[k])delete t[k];else t[k]=v;pushCfg(rooms,t)});
+},true);
+$("aset").onclick=function(){if(!admin)return;
+  $("rl").value=rooms.join("\n");
+  $("tl").innerHTML=Object.keys(D).map(function(k){return'<div class="tr"><span class="m">'+esc(k)+'</span><input class="f" data-k="'+esc(k)+'" value="'+esc(T(k))+'"></div>'}).join("");
+  $("adlg").showModal();
+};
+$("acx").onclick=function(){$("adlg").close()};
+$("arst").onclick=function(){uiConfirm("Restore all default texts?",{ok:"Restore"}).then(function(y){if(y)pushCfg(rooms,{}).then(function(){$("adlg").close()})})};
+$("asv").onclick=function(){
+  var r=$("rl").value.split("\n").map(function(s){return s.trim()}).filter(Boolean);
+  if(!r.length){uiAlert("Add at least one room.");return}
+  var t={};qa("#tl input").forEach(function(i){var v=i.value.trim();if(v&&v!==D[i.dataset.k])t[i.dataset.k]=v});
+  pushCfg(r,t).then(function(){$("adlg").close()});
+};
+$("exp").onclick=async function(){
+  var rows=[["Name","Other names","Category","Unit","Room","Location","Buyer","Purchase date","Expiration date","Status","Supplier link","SDS link","Reference","Notes"]];
+  items.forEach(function(i){i.units.forEach(function(u,x){rows.push([i.name,(i.aliases||[]).join(", "),i.category,x+1,u.room,u.place,u.buyer,fmt(u.date),fmt(u.expiry),T("st_"+(i.status||"stock"))+(i.status==="shared"&&i.sharedWith?" "+i.sharedWith:""),i.supplier,i.sdsUrl,i.ref,i.notes])})});
+  var csv="\ufeff"+rows.map(function(r){return r.map(function(c){return'"'+String(c==null?"":c).replace(/"/g,'""')+'"'}).join(",")}).join("\n");
+  try{var dl=await claude.use("downloads");if(dl)await dl.save({filename:"inventory.csv",data:csv});else uiAlert("Export unavailable here.")}catch(e){}
+};
+async function init(){
+  try{db=await claude.use("db")}catch(e){db=null}
+  if(!db){$("warn").innerHTML='<div class="note">'+esc(T("w_signin"))+'</div>';canWrite=false;$("add").hidden=true;render();return}
+  try{assets=await claude.use("assets")}catch(e){assets=null}
+  try{var u=await claude.use("user");if(u&&u.can("data.write")===false){canWrite=false;$("add").hidden=true;$("warn").innerHTML='<div class="note">'+esc(T("w_ro"))+'</div>'}}catch(e){}
+  if(canWrite){$("adm").hidden=false;}
+  db.doc("config/main").onSnapshot(function(s){var d=s.exists&&s.data();if(d){if(d.rooms&&d.rooms.length)rooms=d.rooms;texts=d.texts||{}}render()},function(){});
+  db.collection("items").onSnapshot(function(s){items=s.docs.map(function(d){var o=Object.assign({},d.data());o.id=d.id;return norm(o)});render()},function(){$("count").textContent="Loading error"});
+}
+render();init();
+})();
+</script></body></html>
