@@ -144,7 +144,7 @@ window.claude=(function(){
 (function(){
 var items=[],db=null,assets=null,canWrite=true,admin=false,editing=false,editId=null,cur=null;
 /* >>> EDIT YOUR STORAGE ROOMS HERE (keep the quotes and commas) <<< */
-var rooms=["Suspensions","Biocell","Chimie","Atelier","IPGG Technological Platform"],texts={},sort={k:"date",d:-1};
+var rooms=["Suspensions","Biocell","Chimie","Atelier","IPGG Technological Platform","Granular","Bacteria","Other"],texts={},sort={k:"date",d:-1};
 var CATS=["Chemistry","Software","Instrument","Others"];
 var $=function(i){return document.getElementById(i)},qa=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
 var D={ph_date:"dd/mm/yyyy, mm/yyyy or yyyy",b_dup_yes:"Yes, same product — add to",count_one:"product",count_many:"products",count_shown:"shown",b_edit:"Edit",b_delete:"Delete",l_supplier:"Supplier",l_sds:"SDS",l_expshort:"Exp.",l_unit:"Unit",f_title_edit:"Edit product",fc_all:"All categories",fr_all:"All rooms",fb_all:"All buyers",w_signin:"Sign in to view and edit the shared inventory.",w_ro:"Read-only: ask for Contributor access to edit."};
@@ -267,8 +267,14 @@ function askDup(ms){return new Promise(function(res){
   $("dl").onclick=function(e){var b=e.target.closest("button");if(b)done(b.dataset.id)};
   $("dno").onclick=function(){done(null)};$("dcx").onclick=function(){done(false)};
   dg.onclose=function(){done(false)};applyTexts();dg.showModal()})}
+function otherCheck(){
+  $("place").setCustomValidity("");
+  var pairs=difState?qa("#units .g3").map(function(r){return[r.querySelector(".ur-room"),r.querySelector(".ur-place")]}):[[$("room"),$("place")]];
+  pairs.forEach(function(p){p[1].setCustomValidity(p[0].value==="Other"&&!p[1].value.trim()?"Please specify the room or place":"")});
+}
 async function save(keep){
   qa("#units .ur-date,#units .ur-exp").forEach(function(e){e.setCustomValidity(parseD(e.value)===null?"Use dd/mm/yyyy, mm/yyyy or yyyy":"")});
+  otherCheck();
   if(!$("frm").reportValidity())return;
   $("ok").disabled=$("again").disabled=true;
   var chem=$("cat").value==="Chemistry",c=cur||{},u=readUnits().map(function(x){return{room:x.room,place:x.place,buyer:x.buyer,date:parseD(x.date)||"",expiry:chem?(parseD(x.expiry)||""):""}});
