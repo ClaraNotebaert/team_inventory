@@ -267,14 +267,8 @@ function askDup(ms){return new Promise(function(res){
   $("dl").onclick=function(e){var b=e.target.closest("button");if(b)done(b.dataset.id)};
   $("dno").onclick=function(){done(null)};$("dcx").onclick=function(){done(false)};
   dg.onclose=function(){done(false)};applyTexts();dg.showModal()})}
-function otherCheck(){
-  $("place").setCustomValidity("");
-  var pairs=difState?qa("#units .g3").map(function(r){return[r.querySelector(".ur-room"),r.querySelector(".ur-place")]}):[[$("room"),$("place")]];
-  pairs.forEach(function(p){p[1].setCustomValidity(p[0].value==="Other"&&!p[1].value.trim()?"Please specify the room or place":"")});
-}
 async function save(keep){
   qa("#units .ur-date,#units .ur-exp").forEach(function(e){e.setCustomValidity(parseD(e.value)===null?"Use dd/mm/yyyy, mm/yyyy or yyyy":"")});
-  otherCheck();
   if(!$("frm").reportValidity())return;
   $("ok").disabled=$("again").disabled=true;
   var chem=$("cat").value==="Chemistry",c=cur||{},u=readUnits().map(function(x){return{room:x.room,place:x.place,buyer:x.buyer,date:parseD(x.date)||"",expiry:chem?(parseD(x.expiry)||""):""}});
